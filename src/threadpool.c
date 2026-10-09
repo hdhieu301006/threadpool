@@ -14,6 +14,7 @@ void *thread_function(void *threadpool) {
         }
 
         if (pool->stop && pool->queued == 0) {
+            pthread_cond_broadcast(&(pool->notify));
             pthread_mutex_unlock(&(pool->lock));
             pthread_exit(NULL);
         }
@@ -46,5 +47,23 @@ void threadpool_init(threadpool_t *pool) {
     for (int i = 0; i < THREADS; i++) {
         pthread_create(&pool->threads[i], NULL, thread_function, pool);
     }
+}
+
+void threadpool_destroy(threadpool_t *pool) {
+    if (pool == NULL) {
+        return;
+    }
+    
+    pthread_mutex_lock(&(pool->lock));
+    pool->stop = 1;
+    pthread_cond_broadcast(&(pool->notify));
+    pthread_mutex_unlock(&(pool->lock));
+
+    for (int i = 0; i < THREADS; i++) {
+        pthread_join(pool->threads[i], NULL);
+    }
+
+    pthread_mutex_destroy(&(pool->lock));
+    pthread_cond_destroy(&(pool->notify));
 }
 
