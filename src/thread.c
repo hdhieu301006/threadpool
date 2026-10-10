@@ -16,18 +16,21 @@ static void *thread_function(void *threadpool) {
             pthread_cond_wait(&(pool->notify), &(pool->lock));
         }
 
+        // Graceful Shutdown
         if (pool->stop && pool->queued == 0) {
             pthread_cond_broadcast(&(pool->notify));
             pthread_mutex_unlock(&(pool->lock));
             pthread_exit(NULL);
         }
 
+        // Lấy task an toàn
         task_t task = pool->task_queue[pool->queue_front];
         pool->queue_front = (pool->queue_front + 1) % QUEUE_SIZE;
         pool->queued--;
 
         pthread_mutex_unlock(&(pool->lock));
 
+        // Kiểm tra chắc chắn con trỏ hàm không NULL trước khi gọi
         if (task.fn != NULL) {
             task.fn(task.arg);
         }
@@ -40,7 +43,7 @@ void threadpool_init(threadpool_t *pool) {
     if (pool == NULL) {
         return;
     }
-    
+
     pool->queued = 0;
     pool->queue_front = 0;
     pool->queue_back = 0;
@@ -48,29 +51,32 @@ void threadpool_init(threadpool_t *pool) {
 
     pthread_mutex_init(&(pool->lock), NULL);
     pthread_cond_init(&(pool->notify), NULL);
-    
+
     for (int i = 0; i < THREADS; i++) {
         pthread_create(&(pool->threads[i]), NULL, thread_function, pool);
     }
 }
 
 void threadpool_add_task(threadpool_t *pool, void (*function)(void *), void *arg) {
+    // Từ chối ngay nếu pool NULL hoặc con trỏ hàm NULL
     if (pool == NULL || function == NULL) {
         return;
     }
 
     pthread_mutex_lock(&(pool->lock));
 
+    // Nếu đầy hàng đợi hoặc pool đang dừng: KHÔNG LÀM GÌ CẢ, KHÔNG FREE(ARG), KHÔNG PRINTF
     if (pool->queued >= QUEUE_SIZE || pool->stop) {
         pthread_mutex_unlock(&(pool->lock));
         return;
     }
-        
+
+    // Ghi nhận task vào hàng đợi
     pool->task_queue[pool->queue_back].fn = function;
     pool->task_queue[pool->queue_back].arg = arg;
     pool->queue_back = (pool->queue_back + 1) % QUEUE_SIZE;
     pool->queued++;
-    
+
     pthread_cond_signal(&(pool->notify));
 
     pthread_mutex_unlock(&(pool->lock));
@@ -80,7 +86,7 @@ void threadpool_destroy(threadpool_t *pool) {
     if (pool == NULL) {
         return;
     }
-    
+
     pthread_mutex_lock(&(pool->lock));
     pool->stop = 1;
     pthread_cond_broadcast(&(pool->notify));
@@ -93,4 +99,3 @@ void threadpool_destroy(threadpool_t *pool) {
     pthread_mutex_destroy(&(pool->lock));
     pthread_cond_destroy(&(pool->notify));
 }
-
