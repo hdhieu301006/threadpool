@@ -31,7 +31,7 @@ static void *thread_function(void *threadpool) {
         pool->queue_front = (pool->queue_front + 1) % QUEUE_SIZE;
         pool->queued--;
 
-        pthread_cond_signal(&(pool->notify));
+        pthread_cond_broadcast(&(pool->notify));
 
         pthread_mutex_unlock(&(pool->lock));
 
@@ -82,7 +82,7 @@ void threadpool_add_task(threadpool_t *pool, void (*function)(void *), void *arg
     pool->queue_back = (pool->queue_back + 1) % QUEUE_SIZE;
     pool->queued++;
     
-    pthread_cond_signal(&(pool->notify));
+    pthread_cond_broadcast(&(pool->notify));
 
     pthread_mutex_unlock(&(pool->lock));
 }
