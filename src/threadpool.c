@@ -31,7 +31,7 @@ static void *thread_function(void *threadpool) {
         pool->queue_front = (pool->queue_front + 1) % QUEUE_SIZE;
         pool->queued--;
 
-        pthread_cond_signal(&(pool->not_full));
+        pthread_cond_signal(&(pool->notify));
 
         pthread_mutex_unlock(&(pool->lock));
 
