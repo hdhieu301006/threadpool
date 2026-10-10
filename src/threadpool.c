@@ -69,7 +69,7 @@ void threadpool_add_task(threadpool_t *pool, void (*function)(void *), void *arg
     pthread_mutex_lock(&(pool->lock));
 
     while (pool->queued >= QUEUE_SIZE && !pool->stop) {
-        pthread_cond_wait(&(pool->not_full), &(pool->lock));
+        pthread_cond_wait(&(pool->notify), &(pool->lock));
     }
 
     if (pool->stop) {
