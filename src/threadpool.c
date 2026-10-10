@@ -22,6 +22,11 @@ static void *thread_function(void *threadpool) {
             pthread_exit(NULL);
         }
 
+        if (pool->queued == 0) {
+           pthread_mutex_unlock(&(pool->lock));
+            continue;
+        }
+        
         task_t task = pool->task_queue[pool->queue_front];
         pool->queue_front = (pool->queue_front + 1) % QUEUE_SIZE;
         pool->queued--;
