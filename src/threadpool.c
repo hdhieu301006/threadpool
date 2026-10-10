@@ -58,9 +58,6 @@ void threadpool_add_task(threadpool_t *pool, void (*function)(void*), void *arg)
 
     int next_rear = (pool->queue_back + 1) % QUEUE_SIZE;
     if (pool->queued >= QUEUE_SIZE || pool->stop) {
-        if (arg != NULL) {
-            free(arg);
-        }
         pthread_mutex_unlock(&(pool->lock));
         return;
     }
