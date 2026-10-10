@@ -26,10 +26,12 @@ static void *thread_function(void *threadpool) {
            pthread_mutex_unlock(&(pool->lock));
             continue;
         }
-        
+
         task_t task = pool->task_queue[pool->queue_front];
         pool->queue_front = (pool->queue_front + 1) % QUEUE_SIZE;
         pool->queued--;
+
+        pthread_cond_signal(&(pool->not_full));
 
         pthread_mutex_unlock(&(pool->lock));
 
@@ -66,7 +68,11 @@ void threadpool_add_task(threadpool_t *pool, void (*function)(void *), void *arg
 
     pthread_mutex_lock(&(pool->lock));
 
-    if (pool->queued >= QUEUE_SIZE || pool->stop) {
+    while (pool->queued >= QUEUE_SIZE && !pool->stop) {
+        pthread_cond_wait(&(pool->not_full), &(pool->lock));
+    }
+
+    if (pool->stop) {
         pthread_mutex_unlock(&(pool->lock));
         return;
     }

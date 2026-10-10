@@ -23,7 +23,6 @@ int main(void) {
         threadpool_add_task(&pool, example_task, task_num);
     }
 
-    sleep(5);
     threadpool_destroy(&pool);
 
     return 0;
